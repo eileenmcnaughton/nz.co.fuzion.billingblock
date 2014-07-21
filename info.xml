@@ -2,11 +2,11 @@
 <extension key="nz.co.fuzion.billingblock" type="module">
   <file>billingblock</file>
   <name>Billing Block adjustments</name>
-  <description>FIXME</description>
-  <license>FIXME</license>
+  <description>Suppresses billing details in favour of other blocks</description>
+  <license>AGPL</license>
   <maintainer>
-    <author>FIXME</author>
-    <email>FIXME@example.com</email>
+    <author>Eileen</author>
+    <email>eileen@fuzion.co.nz</email>
   </maintainer>
   <releaseDate>2014-07-20</releaseDate>
   <version>1.0</version>
@@ -15,7 +15,7 @@
     <ver>4.4</ver>
     <ver>4.5</ver>
   </compatibility>
-  <comments>This is a new, undeveloped module</comments>
+  <comments></comments>
   <civix>
     <namespace>CRM/Billingblock</namespace>
   </civix>

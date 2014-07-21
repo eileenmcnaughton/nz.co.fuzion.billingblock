@@ -70,19 +70,51 @@ function billingblock_civicrm_managed(&$entities) {
 }
 
 /**
- * Implementation of hook_civicrm_managed
- *
- * Generate a list of entities to create/deactivate/delete when this module
- * is installed, disabled, uninstalled.
+ * implement buildForm hook to remove billing fields if elsewhere on the form
+ * @param string $formName
+ * @param CRM_Core_Form $form
  */
 function billingblock_civicrm_buildForm($formName, &$form) {
   if ($formName != 'CRM_Contribute_Form_Contribution_Main')  {
     return;
   }
 
-  $profileFields = $form->get('profileAddressFields');
   $billingLocationID = $form->get('bltID');
-  $billingFields = array(
+  $profileFields = $form->get('profileAddressFields');
+  $billingFields = billingblock_getDisplayedBillingFields($profileFields, $billingLocationID);
+  $form->assign('billingFields', $billingFields);
+  $form->assign('profileFields', $billingFields);
+
+  foreach (billingblock_getSuppressedBillingFields($profileFields, $billingLocationID) as $billingField) {
+    $form->_paymentFields[$billingField]['is_required'] = FALSE;
+  }
+
+  CRM_Core_Region::instance('billing-block')->update('default', array(
+    'disabled' => TRUE,
+  ));
+  CRM_Core_Region::instance('billing-block')->add(array(
+    'template' => 'SubstituteBillingBlock.tpl',
+  ));
+}
+
+/**
+ * Get address specific profile fields
+ * @param $profileFields
+ *
+ * @return array
+ */
+function _billingblock_getProfileAddressFields($profileFields) {
+  return array_diff_key((array)$profileFields, array_fill_keys(array('first_name', 'middle_name', 'last_name',), 1));
+}
+
+/**
+ * get billing fields
+ * @param integer $billingLocationID
+ *
+ * @return array
+ */
+function billingblock_getBillingFields($billingLocationID) {
+  return array(
     'first_name' => 'billing_first_name',
     'middle_name' => 'billing_middle_name',
     'last_name' => 'billing_last_name',
@@ -92,15 +124,76 @@ function billingblock_civicrm_buildForm($formName, &$form) {
     'state_province' => "billing_state_province_id-{$billingLocationID}",
     'postal_code' => "billing_postal_code-{$billingLocationID}",
   );
-  $profileAddressFields = array_diff_key($profileFields, array_fill_keys(array('first_name', 'middle_name', 'last_name',), 1));
-  $billingFields = array_diff_key($billingFields, $profileAddressFields);
-  $form->assign('billingFields', $billingFields);
-  $form->assign('profileFields', $billingFields);
+}
 
-  CRM_Core_Region::instance('billing-block')->update('default', array(
-    'disabled' => TRUE,
-  ));
-  CRM_Core_Region::instance('billing-block')->add(array(
-    'template' => 'SubstituteBillingBlock.tpl',
-  ));
+/**
+ * Get the billing fields we have suppressed
+ * @param array $profileFields
+ * @param integer $billingLocationID
+ *
+ * @return array
+ */
+function billingblock_getSuppressedBillingFields($profileFields, $billingLocationID) {
+  return array_diff_key(billingblock_getBillingFields($billingLocationID), billingblock_getDisplayedBillingFields($profileFields, $billingLocationID));
+}
+
+/**
+ * Get the billing fields for display
+ * @param array $profileFields
+ * @param integer $billingLocationID
+ *
+ * @return array
+ */
+function billingblock_getDisplayedBillingFields($profileFields, $billingLocationID) {
+  $profileAddressFields = _billingblock_getProfileAddressFields($profileFields);
+  return array_diff_key(billingblock_getBillingFields($billingLocationID), $profileAddressFields);
+}
+
+/**
+ * @param $formName
+ * @param $fields
+ * @param $files
+ * @param $form
+ * @param $errors
+ */
+function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form, &$errors ) {
+  if ($formName != 'CRM_Contribute_Form_Contribution_Main')  {
+    return;
+  }
+  $billingLocationID = $form->get('bltID');
+  $billingFields = billingblock_getSuppressedBillingFields($form->get('profileAddressFields'), $billingLocationID);
+  $locations = civicrm_api3('location_type', 'get', array('return' => 'id', 'is_active' => 1, 'options' => array('sort' => 'is_default DESC')));
+  $locationIDs = array('Primary') + array_keys($locations['values']);
+
+  foreach ($billingFields as $fieldName => $billingField) {
+    foreach ($locationIDs as $locationID) {
+      $possibleFieldName = $fieldName . '-' . $locationID;
+      if (!empty($fields[$possibleFieldName])) {
+        $fields[$billingField] = $fields[$possibleFieldName];
+        continue 2;
+      }
+    }
+  }
+}
+
+function billingblock_civicrm_postProcess($formName, &$form){
+  if (!billingblock_civicrm_is_billing($formName)) {
+    return;
+  }
+  if (empty($form->_params['country']) && !empty($form->_params['country_id'])) {
+    $form->_params['country'] =  CRM_Core_PseudoConstant::countryIsoCode($form->_params['country_id']);
+  }
+}
+
+/**
+ * Is this form a billing form?
+ * @param $formName
+ *
+ * @return bool
+ */
+function billingblock_civicrm_is_billing($formName) {
+  if ($formName == 'CRM_Contribute_Form_Contribution_Main')  {
+    return TRUE;
+  }
+  return FALSE;
 }
