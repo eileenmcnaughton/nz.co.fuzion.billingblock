@@ -164,12 +164,17 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
   $billingFields = billingblock_getSuppressedBillingFields($form->get('profileAddressFields'), $billingLocationID);
   $locations = civicrm_api3('location_type', 'get', array('return' => 'id', 'is_active' => 1, 'options' => array('sort' => 'is_default DESC')));
   $locationIDs = array('Primary') + array_keys($locations['values']);
+  $data = &$form->controller->container();
 
   foreach ($billingFields as $fieldName => $billingField) {
     foreach ($locationIDs as $locationID) {
       $possibleFieldName = $fieldName . '-' . $locationID;
       if (!empty($fields[$possibleFieldName])) {
         $fields[$billingField] = $fields[$possibleFieldName];
+        $data['values']['Main'][$fields[$billingField]] = $fields[$possibleFieldName];
+        if (stristr($billingField, 'country') && !empty($fields[$possibleFieldName]) ) {
+          $data['values']['Main']['country'] = CRM_Core_PseudoConstant::countryIsoCode($fields[$possibleFieldName]);
+        }
         continue 2;
       }
     }
