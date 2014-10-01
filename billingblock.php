@@ -84,8 +84,8 @@ function billingblock_civicrm_buildForm($formName, &$form) {
   $billingFields = billingblock_getDisplayedBillingFields($profileFields, $billingLocationID);
   $form->assign('billingFields', $billingFields);
   $form->assign('profileFields', $billingFields);
-
-  foreach (billingblock_getSuppressedBillingFields($profileFields, $billingLocationID) as $billingField) {
+  $profileIDs = array($form->_values['custom_post_id'], $form->_values['custom_pre_id']);
+  foreach (billingblock_getSuppressedBillingFields($profileFields, $profileIDs, $form->_fields, $billingLocationID) as $billingField) {
     $form->_paymentFields[$billingField]['is_required'] = FALSE;
   }
 
@@ -128,12 +128,24 @@ function billingblock_getBillingFields($billingLocationID) {
 
 /**
  * Get the billing fields we have suppressed
+ *
  * @param array $profileFields
+ * @param array $profileIDs
+ * @param array $fields
  * @param integer $billingLocationID
  *
  * @return array
  */
-function billingblock_getSuppressedBillingFields($profileFields, $billingLocationID) {
+function billingblock_getSuppressedBillingFields($profileFields, $profileIDs, $fields, $billingLocationID) {
+  // treat both pre & post profile fields as potential billing fields
+  foreach (array_keys($fields) as $key) {
+    if (in_array($key, array('first_name', 'middle_name', 'last_name'))) {
+      $profileFields[$key] = NULL;
+    }
+    else {
+      CRM_Core_BAO_UFField::assignAddressField($key, $profileFields, array('uf_group_id' => array('IN' => $profileIDs)));
+    }
+  }
   return array_diff_key(billingblock_getBillingFields($billingLocationID), billingblock_getDisplayedBillingFields($profileFields, $billingLocationID));
 }
 
@@ -146,7 +158,16 @@ function billingblock_getSuppressedBillingFields($profileFields, $billingLocatio
  */
 function billingblock_getDisplayedBillingFields($profileFields, $billingLocationID) {
   $profileAddressFields = _billingblock_getProfileAddressFields($profileFields);
+  $profileAddressFields = array_merge($profileAddressFields, billingblock_getNameFields(TRUE));
   return array_diff_key(billingblock_getBillingFields($billingLocationID), $profileAddressFields);
+}
+
+/**
+ * @return array
+ */
+function billingblock_getNameFields($flip = FALSE) {
+  $nameFields = array('first_name', 'middle_name', 'last_name');
+  return $flip ? array_fill_keys($nameFields, NULL): $nameFields;
 }
 
 /**
@@ -161,7 +182,8 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
     return;
   }
   $billingLocationID = $form->get('bltID');
-  $billingFields = billingblock_getSuppressedBillingFields($form->get('profileAddressFields'), $billingLocationID);
+  $profileIDs = array($form->_values['custom_post_id'], $form->_values['custom_pre_id']);
+  $billingFields = billingblock_getSuppressedBillingFields($form->get('profileAddressFields'), $profileIDs, $form->_fields, $billingLocationID);
   $locations = civicrm_api3('location_type', 'get', array('return' => 'id', 'is_active' => 1, 'options' => array('sort' => 'is_default DESC')));
   $locationIDs = array('Primary') + array_keys($locations['values']);
   $data = &$form->controller->container();
@@ -172,6 +194,7 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
       if (!empty($fields[$possibleFieldName])) {
         $fields[$billingField] = $fields[$possibleFieldName];
         $data['values']['Main'][$fields[$billingField]] = $fields[$possibleFieldName];
+        $form->setElementError($billingField, NULL);
         if (stristr($billingField, 'country') && !empty($fields[$possibleFieldName]) ) {
           $data['values']['Main']['country'] = CRM_Core_PseudoConstant::countryIsoCode($fields[$possibleFieldName]);
         }
