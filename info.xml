@@ -4,18 +4,26 @@
   <name>Billing Block adjustments</name>
   <description>Suppresses billing details in favour of other blocks</description>
   <license>AGPL</license>
+  <urls>
+    <url desc="Main Extension Page">http://civicrm.org</url>
+    <url desc="Documentation">http://civicrm.org</url>
+    <url desc="Support">http://civicrm.org</url>
+    <url desc="Licensing">http://civicrm.org</url>
+  </urls>
   <maintainer>
     <author>Eileen</author>
     <email>eileen@fuzion.co.nz</email>
   </maintainer>
   <releaseDate>2014-07-20</releaseDate>
   <version>1.0</version>
-  <develStage>alpha</develStage>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>4.4</ver>
     <ver>4.5</ver>
   </compatibility>
-  <comments></comments>
+  <comments>Extension removes billing fields and populates them from profile fields if it can. If you have a profile field
+  called postcode then it will remove that field from the billing block and use that detail. Note that it prefers profile fields of types billing and primary
+  Name fields need to be named first_name, last_name or middle_name to be preferred</comments>
   <civix>
     <namespace>CRM/Billingblock</namespace>
   </civix>
