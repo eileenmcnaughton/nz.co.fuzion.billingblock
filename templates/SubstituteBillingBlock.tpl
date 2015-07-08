@@ -109,9 +109,10 @@
       </div>
     </fieldset>
 
-    {if $profileAddressFields}
+    {if $profileAddressFields && $billingFields}
       <input type="checkbox" id="billingcheckbox" value="0"> <label for="billingcheckbox">{ts}My billing address is the same as above{/ts}</label>
     {/if}
+    {if $billingFields}
     <fieldset class="billing_name_address-group">
       <legend>{ts}Billing Name and Address{/ts}</legend>
       <div class="crm-section billing_name_address-section">
@@ -124,6 +125,7 @@
         {/foreach}
       </div>
     </fieldset>
+    {/if}
     {else}
     </fieldset>
     {/if}
