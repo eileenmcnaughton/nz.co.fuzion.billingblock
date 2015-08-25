@@ -82,19 +82,12 @@ function billingblock_civicrm_buildForm($formName, &$form) {
   $billingLocationID = $form->get('bltID');
   $profileFields = $form->get('profileAddressFields');
   $billingFields = billingblock_getDisplayedBillingFields($profileFields, $billingLocationID);
-  $form->assign('billingFields', $billingFields);
+  $form->assign('billingDetailsFields', $billingFields);
   $form->assign('profileFields', $billingFields);
   $profileIDs = array($form->_values['custom_post_id'], $form->_values['custom_pre_id']);
   foreach (billingblock_getSuppressedBillingFields($profileFields, $profileIDs, $form->_fields, $billingLocationID) as $billingField) {
     $form->_paymentFields[$billingField]['is_required'] = FALSE;
   }
-
-  CRM_Core_Region::instance('billing-block')->update('default', array(
-    'disabled' => TRUE,
-  ));
-  CRM_Core_Region::instance('billing-block')->add(array(
-    'template' => 'SubstituteBillingBlock.tpl',
-  ));
 }
 
 /**
