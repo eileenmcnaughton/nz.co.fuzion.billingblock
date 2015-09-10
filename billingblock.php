@@ -84,7 +84,7 @@ function billingblock_civicrm_buildForm($formName, &$form) {
   $billingFields = billingblock_getDisplayedBillingFields($profileFields, $billingLocationID);
   $form->assign('billingDetailsFields', $billingFields);
   $form->assign('profileFields', $billingFields);
-  $profileIDs = array($form->_values['custom_post_id'], $form->_values['custom_pre_id']);
+  $profileIDs = getFormProfileIDs($form);
   foreach (billingblock_getSuppressedBillingFields($profileFields, $profileIDs, $form->_fields, $billingLocationID) as $billingField) {
     $form->_paymentFields[$billingField]['is_required'] = FALSE;
   }
@@ -175,7 +175,8 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
     return;
   }
   $billingLocationID = $form->get('bltID');
-  $profileIDs = array($form->_values['custom_post_id'], $form->_values['custom_pre_id']);
+  $profileIDs = getFormProfileIDs($form);
+
   $billingFields = billingblock_getSuppressedBillingFields($form->get('profileAddressFields'), $profileIDs, $form->_fields, $billingLocationID);
   $locations = civicrm_api3('location_type', 'get', array('return' => 'id', 'is_active' => 1, 'options' => array('sort' => 'is_default DESC')));
   $locationIDs = array('Primary') + array_keys($locations['values']);
@@ -195,6 +196,21 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
       }
     }
   }
+}
+
+/**
+ * @param $form
+ *
+ * @return array
+ */
+function getFormProfileIDs(&$form) {
+  $profileIDs = array();
+  foreach (array('custom_post_id', 'custom_pre_id') as $profile) {
+    if (!empty($form->_values[$profile])) {
+      $profileIDs[] = $form->_values[$profile];
+    }
+  }
+  return $profileIDs;
 }
 
 function billingblock_civicrm_postProcess($formName, &$form){
