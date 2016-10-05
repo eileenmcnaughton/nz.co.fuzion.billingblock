@@ -179,7 +179,7 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
 
   $billingFields = billingblock_getSuppressedBillingFields($form->get('profileAddressFields'), $profileIDs, $form->_fields, $billingLocationID);
   $locations = civicrm_api3('location_type', 'get', array('return' => 'id', 'is_active' => 1, 'options' => array('sort' => 'is_default DESC')));
-  $locationIDs = array('Primary') + array_keys($locations['values']);
+  $locationIDs = array_merge(array('Primary'), array_keys($locations['values']));
   $data = &$form->controller->container();
 
   foreach ($billingFields as $fieldName => $billingField) {
@@ -187,11 +187,17 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
       $possibleFieldName = $fieldName . '-' . $locationID;
       if (!empty($fields[$possibleFieldName])) {
         $fields[$billingField] = $fields[$possibleFieldName];
-        $data['values']['Main'][$fields[$billingField]] = $fields[$possibleFieldName];
+        $data['values']['Main'][$billingField] = $fields[$possibleFieldName];
         $form->setElementError($billingField, NULL);
         if (stristr($billingField, 'country') && !empty($fields[$possibleFieldName]) ) {
           $data['values']['Main']['country'] = CRM_Core_PseudoConstant::countryIsoCode($fields[$possibleFieldName]);
         }
+        continue 2;
+      }
+      elseif (!empty($fields[$fieldName]) && empty($fields[$possibleFieldName]) && empty($data['values']['Main'][$billingField])) {
+        $fields[$billingField] = $fields[$fieldName];
+        $data['values']['Main'][$billingField] = $fields[$fieldName];
+        $form->setElementError($billingField, NULL);
         continue 2;
       }
     }
