@@ -25,5 +25,9 @@
   Name fields need to be named first_name, last_name or middle_name to be preferred</comments>
   <civix>
     <namespace>CRM/Billingblock</namespace>
+    <format>25.01.1</format>
   </civix>
+  <classloader>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
 </extension>
