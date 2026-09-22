@@ -51,7 +51,7 @@ function billingblock_civicrm_buildForm($formName, &$form) {
  * @return array
  */
 function _billingblock_getProfileAddressFields($profileFields) {
-  return array_diff_key((array)$profileFields, array_fill_keys(array('first_name', 'middle_name', 'last_name',), 1));
+  return array_diff_key((array)$profileFields, array_fill_keys(['first_name', 'middle_name', 'last_name',], 1));
 }
 
 /**
@@ -61,7 +61,7 @@ function _billingblock_getProfileAddressFields($profileFields) {
  * @return array
  */
 function billingblock_getBillingFields($billingLocationID) {
-  return array(
+  return [
     'first_name' => 'billing_first_name',
     'middle_name' => 'billing_middle_name',
     'last_name' => 'billing_last_name',
@@ -70,7 +70,7 @@ function billingblock_getBillingFields($billingLocationID) {
     'country' => "billing_country_id-{$billingLocationID}",
     'state_province' => "billing_state_province_id-{$billingLocationID}",
     'postal_code' => "billing_postal_code-{$billingLocationID}",
-  );
+  ];
 }
 
 /**
@@ -86,11 +86,11 @@ function billingblock_getBillingFields($billingLocationID) {
 function billingblock_getSuppressedBillingFields($profileFields, $profileIDs, $fields, $billingLocationID) {
   // treat both pre & post profile fields as potential billing fields
   foreach (array_keys($fields) as $key) {
-    if (in_array($key, array('first_name', 'middle_name', 'last_name'))) {
+    if (in_array($key, ['first_name', 'middle_name', 'last_name'])) {
       $profileFields[$key] = NULL;
     }
     else {
-      CRM_Core_BAO_UFField::assignAddressField($key, $profileFields, array('uf_group_id' => array('IN' => $profileIDs)));
+      CRM_Core_BAO_UFField::assignAddressField($key, $profileFields, ['uf_group_id' => ['IN' => $profileIDs]]);
     }
   }
   return array_diff_key(billingblock_getBillingFields($billingLocationID), billingblock_getDisplayedBillingFields($profileFields, $billingLocationID));
@@ -113,7 +113,7 @@ function billingblock_getDisplayedBillingFields($profileFields, $billingLocation
  * @return array
  */
 function billingblock_getNameFields($flip = FALSE) {
-  $nameFields = array('first_name', 'middle_name', 'last_name');
+  $nameFields = ['first_name', 'middle_name', 'last_name'];
   return $flip ? array_fill_keys($nameFields, NULL): $nameFields;
 }
 
@@ -132,8 +132,8 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
   $profileIDs = getFormProfileIDs($form);
 
   $billingFields = billingblock_getSuppressedBillingFields($form->get('profileAddressFields'), $profileIDs, $form->_fields, $billingLocationID);
-  $locations = civicrm_api3('location_type', 'get', array('return' => 'id', 'is_active' => 1, 'options' => array('sort' => 'is_default DESC')));
-  $locationIDs = array_merge(array('Primary'), array_keys($locations['values']));
+  $locations = civicrm_api3('location_type', 'get', ['return' => 'id', 'is_active' => 1, 'options' => ['sort' => 'is_default DESC']]);
+  $locationIDs = array_merge(['Primary'], array_keys($locations['values']));
   $data = &$form->controller->container();
 
   foreach ($billingFields as $fieldName => $billingField) {
@@ -164,8 +164,8 @@ function billingblock_civicrm_validateForm( $formName, &$fields, &$files, &$form
  * @return array
  */
 function getFormProfileIDs(&$form) {
-  $profileIDs = array();
-  foreach (array('custom_post_id', 'custom_pre_id') as $profile) {
+  $profileIDs = [];
+  foreach (['custom_post_id', 'custom_pre_id'] as $profile) {
     if (!empty($form->_values[$profile])) {
       $profileIDs[] = $form->_values[$profile];
     }
